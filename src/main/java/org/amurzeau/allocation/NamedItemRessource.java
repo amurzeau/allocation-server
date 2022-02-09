@@ -50,7 +50,7 @@ public class NamedItemRessource<T extends NamedItem> {
     @PUT
     @Path("{id}")
     public Uni<Response> putUpdate(String id, T value) {
-        if(!id.matches("[a-z\\-]+")) {
+        if(!id.matches("[a-z0-9\\-]+")) {
             LOG.errorv("id has invalid characters, only alpha and dash is allowed: {0}", id);
             return Uni.createFrom().item(Response.status(Status.NOT_ACCEPTABLE).build());
         }

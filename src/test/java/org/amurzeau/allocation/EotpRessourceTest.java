@@ -61,7 +61,7 @@ public class EotpRessourceTest {
         // Test collection contains item
         Map<String, Object> expected1 = new HashMap<String, Object>();
         expected1.put("id", "123456789-0002");
-        expected1.put("name", "Application X initial development");
+        expected1.put("name", "Application X maintenance");
         expected1.put("isDisabled", false);
 
         Map<String, Object> expected2 = new HashMap<String, Object>();

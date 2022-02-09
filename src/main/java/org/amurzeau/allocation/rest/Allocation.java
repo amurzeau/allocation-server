@@ -13,7 +13,7 @@ import lombok.experimental.FieldNameConstants;
 @Entity
 public class Allocation extends PanacheEntity {
     @ManyToOne
-    public Project project;
+    public ProjectReply project;
     
     @ManyToOne
     public ActivityType activityType;
