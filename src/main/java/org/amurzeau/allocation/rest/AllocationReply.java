@@ -11,7 +11,7 @@ import lombok.experimental.FieldNameConstants;
 
 @FieldNameConstants
 @Entity
-public class Allocation extends PanacheEntity {
+public class AllocationReply extends PanacheEntity {
     @ManyToOne
     public ProjectReply project;
     

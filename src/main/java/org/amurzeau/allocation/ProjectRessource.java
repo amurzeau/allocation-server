@@ -11,7 +11,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Response.Status;
 
 import org.amurzeau.allocation.rest.ProjectReply;
@@ -88,7 +87,7 @@ public class ProjectRessource {
     }
 
     @POST
-    public Uni<Response> postNew(ProjectUpdate value, UriInfo uriInfo) {
+    public Uni<Response> postNew(ProjectUpdate value) {
         return Panache.withTransaction(() -> {
             ProjectReply project = new ProjectReply();
             return createOrUpdateProject(project, value);
