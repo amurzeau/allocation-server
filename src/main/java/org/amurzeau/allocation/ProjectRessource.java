@@ -80,9 +80,9 @@ public class ProjectRessource {
                 .replaceWith(project)
                 .onItem().<ProjectReply>transformToUni(item -> {
                     return item.<ProjectReply>persist()
-                        .invoke((persistedItem) -> {
-                            LOG.infov("Creating new item {0} with name {1}", persistedItem.id, persistedItem.name);
-                        });
+                            .invoke((persistedItem) -> {
+                                LOG.infov("Creating new item {0} with name {1}", persistedItem.id, persistedItem.name);
+                            });
                 });
     }
 
@@ -102,24 +102,24 @@ public class ProjectRessource {
         return Panache.withTransaction(() -> {
             Uni<ProjectReply> var = ProjectReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
             return var
-                .onItem().<ProjectReply>transformToUni(item -> {
-                    if (item == null) {
-                        LOG.infov("No project with id {0}", id);
-                        return Uni.createFrom().item(null);
-                    }
-                    return createOrUpdateProject(item, value);
-                })
-                .onFailure().invoke((e) -> {
-                    LOG.errorv("Failure: {0}", e);
-                });
+                    .onItem().<ProjectReply>transformToUni(item -> {
+                        if (item == null) {
+                            LOG.infov("No project with id {0}", id);
+                            return Uni.createFrom().item(null);
+                        }
+                        return createOrUpdateProject(item, value);
+                    })
+                    .onFailure().invoke((e) -> {
+                        LOG.errorv("Failure: {0}", e);
+                    });
         }).onItem().transform(res -> {
-            if(res != null) {
+            if (res != null) {
                 return Response.ok(res).build();
             } else {
                 return Response
-                    .status(Status.NOT_FOUND)
-                    .entity(String.format("No project with id %s", id))
-                    .build();
+                        .status(Status.NOT_FOUND)
+                        .entity(String.format("No project with id %s", id))
+                        .build();
             }
         });
     }
@@ -130,23 +130,23 @@ public class ProjectRessource {
         return Panache.withTransaction(() -> {
             Uni<ProjectReply> var = ProjectReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
             return var
-                .onItem().<Boolean>transformToUni(item -> {
-                    if(item != null)
-                        return item.delete().replaceWith(true);
-                    else
-                        return Uni.createFrom().item(false);
-                })
-                .onFailure().invoke((e) -> {
-                    LOG.errorv("Failure: {0}", e);
-                });
+                    .onItem().<Boolean>transformToUni(item -> {
+                        if (item != null)
+                            return item.delete().replaceWith(true);
+                        else
+                            return Uni.createFrom().item(false);
+                    })
+                    .onFailure().invoke((e) -> {
+                        LOG.errorv("Failure: {0}", e);
+                    });
         }).onItem().transform(res -> {
-            if(res) {
+            if (res) {
                 return Response.ok(res).build();
             } else {
                 return Response
-                    .status(Status.NOT_FOUND)
-                    .entity(String.format("No project with id %s", id))
-                    .build();
+                        .status(Status.NOT_FOUND)
+                        .entity(String.format("No project with id %s", id))
+                        .build();
             }
         });
     }

@@ -45,11 +45,11 @@ public class AllocationRessource {
 
     private Uni<AllocationReply> createOrUpdateProject(AllocationReply replyItem, AllocationUpdate value) {
         replyItem.duration = value.duration;
-        
+
         Uni<?> projectUni = projectRessource.getById(value.projectId).invoke(v -> {
             replyItem.project = v;
         });
-        
+
         Uni<?> activityTypeUni = activityTypeRessource.getById(value.activityTypeId).invoke(v -> {
             replyItem.activityType = v;
         });
@@ -59,11 +59,11 @@ public class AllocationRessource {
                 .replaceWith(replyItem)
                 .onItem().<AllocationReply>transformToUni(item -> {
                     return item.<AllocationReply>persist()
-                        .invoke((persistedItem) -> {
-                            LOG.infov("Creating new item {0} with project name {1}",
-                                persistedItem.id,
-                                persistedItem.project.name);
-                        });
+                            .invoke((persistedItem) -> {
+                                LOG.infov("Creating new item {0} with project name {1}",
+                                        persistedItem.id,
+                                        persistedItem.project.name);
+                            });
                 });
     }
 
@@ -83,24 +83,24 @@ public class AllocationRessource {
         return Panache.withTransaction(() -> {
             Uni<AllocationReply> var = AllocationReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
             return var
-                .onItem().<AllocationReply>transformToUni(item -> {
-                    if (item == null) {
-                        LOG.infov("No project with id {0}", id);
-                        return Uni.createFrom().item(null);
-                    }
-                    return createOrUpdateProject(item, value);
-                })
-                .onFailure().invoke((e) -> {
-                    LOG.errorv("Failure: {0}", e);
-                });
+                    .onItem().<AllocationReply>transformToUni(item -> {
+                        if (item == null) {
+                            LOG.infov("No project with id {0}", id);
+                            return Uni.createFrom().item(null);
+                        }
+                        return createOrUpdateProject(item, value);
+                    })
+                    .onFailure().invoke((e) -> {
+                        LOG.errorv("Failure: {0}", e);
+                    });
         }).onItem().transform(res -> {
-            if(res != null) {
+            if (res != null) {
                 return Response.ok(res).build();
             } else {
                 return Response
-                    .status(Status.NOT_FOUND)
-                    .entity(String.format("No project with id %s", id))
-                    .build();
+                        .status(Status.NOT_FOUND)
+                        .entity(String.format("No project with id %s", id))
+                        .build();
             }
         });
     }
@@ -111,23 +111,23 @@ public class AllocationRessource {
         return Panache.withTransaction(() -> {
             Uni<AllocationReply> var = AllocationReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
             return var
-                .onItem().<Boolean>transformToUni(item -> {
-                    if(item != null)
-                        return item.delete().replaceWith(true);
-                    else
-                        return Uni.createFrom().item(false);
-                })
-                .onFailure().invoke((e) -> {
-                    LOG.errorv("Failure: {0}", e);
-                });
+                    .onItem().<Boolean>transformToUni(item -> {
+                        if (item != null)
+                            return item.delete().replaceWith(true);
+                        else
+                            return Uni.createFrom().item(false);
+                    })
+                    .onFailure().invoke((e) -> {
+                        LOG.errorv("Failure: {0}", e);
+                    });
         }).onItem().transform(res -> {
-            if(res) {
+            if (res) {
                 return Response.ok(res).build();
             } else {
                 return Response
-                    .status(Status.NOT_FOUND)
-                    .entity(String.format("No project with id %s", id))
-                    .build();
+                        .status(Status.NOT_FOUND)
+                        .entity(String.format("No project with id %s", id))
+                        .build();
             }
         });
     }

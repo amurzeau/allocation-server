@@ -1,0 +1,26 @@
+# Configuration racine pouvant être affinée pour chaque sous-répertoire
+root = true
+
+# Section de configuration valable pour tous les types de fichiers
+[*]
+
+# Encodage de des fichiers
+charset = utf-8
+
+# Fin de ligne à la Linux
+end_of_line = lf
+
+# Insère une ligne à la fin des fichiers
+insert_final_newline = true
+
+# Caractère espace pour indentater
+indent_style = space
+
+# Section de configuration spécifique aux classes Java et aux fichiers XML
+[*.{java,xml}]
+
+# Nombre d’espaces d’indentation
+indent_size = 4
+
+# Suppression des espaces de fin
+trim_trailing_whitespace = true

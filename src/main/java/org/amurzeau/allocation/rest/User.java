@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name="\"user\"")
+@Table(name = "\"user\"")
 public class User extends PanacheEntityBase {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,6 +26,6 @@ public class User extends PanacheEntityBase {
     public String email;
 
     public String password;
-    
+
     public boolean isDeleted;
 }

@@ -14,16 +14,15 @@ import org.hibernate.annotations.FetchMode;
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 import lombok.experimental.FieldNameConstants;
 
-
 @FieldNameConstants
 @Entity
 public class ProjectReply extends PanacheEntity {
     public String name;
-    
+
     public String board;
-    
+
     public String component;
-    
+
     public String arch;
 
     @ManyToOne

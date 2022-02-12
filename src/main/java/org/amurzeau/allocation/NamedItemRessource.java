@@ -39,7 +39,7 @@ public class NamedItemRessource<T extends NamedItem> {
     @POST
     public Uni<Response> postNew(T value, UriInfo uriInfo) {
         return NamedItem.postCreate(value).onItem().transform(res -> {
-            if(res) {
+            if (res) {
                 return Response.created(URI.create(uriInfo.getPath() + "/" + value.id)).build();
             } else {
                 return Response.status(Status.CONFLICT).build();
@@ -50,7 +50,7 @@ public class NamedItemRessource<T extends NamedItem> {
     @PUT
     @Path("{id}")
     public Uni<Response> putUpdate(String id, T value) {
-        if(!id.matches("[a-z0-9\\-]+")) {
+        if (!id.matches("[a-z0-9\\-]+")) {
             LOG.errorv("id has invalid characters, only alpha and dash is allowed: {0}", id);
             return Uni.createFrom().item(Response.status(Status.NOT_ACCEPTABLE).build());
         }
@@ -64,7 +64,7 @@ public class NamedItemRessource<T extends NamedItem> {
     @Path("{id}")
     public Uni<Response> delete(String id) {
         return NamedItem.delete(typeParameterClass, id).onItem().transform(res -> {
-            if(res) {
+            if (res) {
                 return Response.ok().build();
             } else {
                 return Response.status(Status.NOT_FOUND).build();

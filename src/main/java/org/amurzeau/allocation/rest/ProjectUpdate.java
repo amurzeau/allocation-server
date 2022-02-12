@@ -7,11 +7,11 @@ import lombok.experimental.FieldNameConstants;
 @FieldNameConstants
 public class ProjectUpdate {
     public String name;
-    
+
     public String board;
-    
+
     public String component;
-    
+
     public String arch;
 
     public String type;

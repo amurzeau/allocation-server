@@ -18,45 +18,45 @@ public class ActivityTypeRessourceTest {
 
     @BeforeAll
     static public void setUp() {
-      RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
     @Test
     public void testPutNewItemEndpoint() {
         given()
-          .when()
-            .contentType(ContentType.JSON)
-            .body("{\"name\": \"Development1\", \"isDisabled\": true }")
-            .put("/activity_type/dev")
-          .then()
-             .statusCode(200)
-             .body("id", Matchers.equalTo("dev"))
-             .body("name", Matchers.equalTo("Development1"))
-             .body("isDisabled", Matchers.equalTo(true));
+                .when()
+                .contentType(ContentType.JSON)
+                .body("{\"name\": \"Development1\", \"isDisabled\": true }")
+                .put("/activity_type/dev")
+                .then()
+                .statusCode(200)
+                .body("id", Matchers.equalTo("dev"))
+                .body("name", Matchers.equalTo("Development1"))
+                .body("isDisabled", Matchers.equalTo(true));
 
         // Test overwriting existing value
         given()
-        .when()
-          .contentType(ContentType.JSON)
-          .body("{\"name\": \"Development\" }")
-          .put("/activity_type/dev")
-        .then()
-           .statusCode(200)
-           .body("id", Matchers.equalTo("dev"))
-           .body("name", Matchers.equalTo("Development"))
-           .body("isDisabled", Matchers.equalTo(false));
+                .when()
+                .contentType(ContentType.JSON)
+                .body("{\"name\": \"Development\" }")
+                .put("/activity_type/dev")
+                .then()
+                .statusCode(200)
+                .body("id", Matchers.equalTo("dev"))
+                .body("name", Matchers.equalTo("Development"))
+                .body("isDisabled", Matchers.equalTo(false));
 
         // Add second item
         given()
-        .when()
-          .contentType(ContentType.JSON)
-          .body("{\"name\": \"Support activities\" }")
-          .put("/activity_type/support")
-        .then()
-          .statusCode(200)
-          .body("id", Matchers.equalTo("support"))
-          .body("name", Matchers.equalTo("Support activities"))
-          .body("isDisabled", Matchers.equalTo(false));
+                .when()
+                .contentType(ContentType.JSON)
+                .body("{\"name\": \"Support activities\" }")
+                .put("/activity_type/support")
+                .then()
+                .statusCode(200)
+                .body("id", Matchers.equalTo("support"))
+                .body("name", Matchers.equalTo("Support activities"))
+                .body("isDisabled", Matchers.equalTo(false));
 
         // Test collection contains item
         Map<String, Object> expected1 = new HashMap<String, Object>();
@@ -70,60 +70,58 @@ public class ActivityTypeRessourceTest {
         expected2.put("isDisabled", false);
 
         given()
-          .when().get("/activity_type")
-          .then()
-            .statusCode(200)
-            .assertThat()
-              .body("size()", Matchers.is(2))
-              .body("$", Matchers.hasItem(expected1))
-              .body("$", Matchers.hasItem(expected2));
+                .when().get("/activity_type")
+                .then()
+                .statusCode(200)
+                .assertThat()
+                .body("size()", Matchers.is(2))
+                .body("$", Matchers.hasItem(expected1))
+                .body("$", Matchers.hasItem(expected2));
     }
-    
 
     @Test
     public void testPostDeleteEndpoint() {
-      int existingItemNumber =
+        int existingItemNumber = given()
+                .when().get("/activity_type")
+                .then()
+                .statusCode(200)
+                .extract().body().jsonPath().getList("$").size();
+
+        // Add item
         given()
-        .when().get("/activity_type")
-        .then()
-          .statusCode(200)
-          .extract().body().jsonPath().getList("$").size();
+                .when()
+                .contentType(ContentType.JSON)
+                .body("{ \"id\": \"delete-me\", \"name\": \"To be deleted\" }")
+                .post("/activity_type")
+                .then()
+                .statusCode(201)
+                .header("Location", Matchers.equalTo("/activity_type/delete-me"));
 
-      // Add item
-      given()
-      .when()
-        .contentType(ContentType.JSON)
-        .body("{ \"id\": \"delete-me\", \"name\": \"To be deleted\" }")
-        .post("/activity_type")
-      .then()
-        .statusCode(201)
-        .header("Location", Matchers.equalTo("/activity_type/delete-me"));
-        
-      given()
-        .when().get("/activity_type")
-        .then()
-          .statusCode(200)
-          .assertThat()
-            .body("size()", Matchers.is(existingItemNumber + 1));
+        given()
+                .when().get("/activity_type")
+                .then()
+                .statusCode(200)
+                .assertThat()
+                .body("size()", Matchers.is(existingItemNumber + 1));
 
-      // Do the delete
-      given()
-        .when().delete("/activity_type/delete-me")
-        .then()
-            .statusCode(200);
+        // Do the delete
+        given()
+                .when().delete("/activity_type/delete-me")
+                .then()
+                .statusCode(200);
 
-      // Do the delete again, check we get a 404
-      given()
-        .when().delete("/activity_type/delete-me")
-        .then()
-            .statusCode(404);
+        // Do the delete again, check we get a 404
+        given()
+                .when().delete("/activity_type/delete-me")
+                .then()
+                .statusCode(404);
 
-      // Check we removed one item
-      given()
-        .when().get("/activity_type")
-        .then()
-          .statusCode(200)
-          .assertThat()
-            .body("size()", Matchers.is(existingItemNumber));
+        // Check we removed one item
+        given()
+                .when().get("/activity_type")
+                .then()
+                .statusCode(200)
+                .assertThat()
+                .body("size()", Matchers.is(existingItemNumber));
     }
 }

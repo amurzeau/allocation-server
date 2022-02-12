@@ -16,7 +16,7 @@ public class UserRessource {
     public Multi<User> getAll() {
         return User.stream("isDeleted", false);
     }
-    
+
     @GET
     @Path("{id}")
     public Uni<User> getById(BigInteger id) {

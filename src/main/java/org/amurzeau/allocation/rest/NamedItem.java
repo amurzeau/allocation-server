@@ -20,7 +20,7 @@ import lombok.experimental.FieldNameConstants;
 @FieldNameConstants
 public class NamedItem extends PanacheEntityBase {
     private static final Logger LOG = Logger.getLogger(NamedItem.class);
-    
+
     @Id
     public String id;
 
@@ -36,7 +36,7 @@ public class NamedItem extends PanacheEntityBase {
     public static <T extends NamedItem> Uni<List<T>> getAll(Class<T> entityClass) {
         @SuppressWarnings("unchecked")
         PanacheQuery<T> var = (PanacheQuery<T>) JpaOperations.INSTANCE.find(entityClass,
-            ActivityType.Fields.isDisabled, false);
+                ActivityType.Fields.isDisabled, false);
 
         return var.list();
     }
@@ -69,21 +69,21 @@ public class NamedItem extends PanacheEntityBase {
             @SuppressWarnings("unchecked")
             Uni<T> var = (Uni<T>) JpaOperations.INSTANCE.findById(entityClass, id, LockModeType.PESSIMISTIC_WRITE);
             return var.onItem().<T>transformToUni(item -> {
-                        T updatedItem;
-    
-                        if (item == null) {
-                            LOG.infov("Creating new item {0} with name {1}", id, value.name);
-                            updatedItem = value;
-                            updatedItem.id = id;
-                        } else {
-                            LOG.infov("Updating item {0} with name {1}", item.id, value.name);
-                            updatedItem = item;
-                            updatedItem.name = value.name;
-                            updatedItem.isDisabled = value.isDisabled;
-                        }
-    
-                        return updatedItem.persist();
-                    })
+                T updatedItem;
+
+                if (item == null) {
+                    LOG.infov("Creating new item {0} with name {1}", id, value.name);
+                    updatedItem = value;
+                    updatedItem.id = id;
+                } else {
+                    LOG.infov("Updating item {0} with name {1}", item.id, value.name);
+                    updatedItem = item;
+                    updatedItem.name = value.name;
+                    updatedItem.isDisabled = value.isDisabled;
+                }
+
+                return updatedItem.persist();
+            })
                     .onFailure().invoke((e) -> {
                         LOG.errorv("Failure: {0}", e);
                     });
