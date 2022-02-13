@@ -19,7 +19,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 
-@Path("/allocation")
+@Path("/allocations")
 public class AllocationRessource {
     private static final Logger LOG = Logger.getLogger(AllocationRessource.class);
 

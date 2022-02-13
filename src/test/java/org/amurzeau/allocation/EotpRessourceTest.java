@@ -27,7 +27,7 @@ public class EotpRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body("{\"name\": \"Application X for Mr X\", \"isDisabled\": true }")
-                .put("/eotp/123456789-0001")
+                .put("/eotps/123456789-0001")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.equalTo("123456789-0001"))
@@ -39,7 +39,7 @@ public class EotpRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body("{\"name\": \"Application X initial development\" }")
-                .put("/eotp/123456789-0001")
+                .put("/eotps/123456789-0001")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.equalTo("123456789-0001"))
@@ -51,7 +51,7 @@ public class EotpRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body("{\"name\": \"Application X maintenance\" }")
-                .put("/eotp/123456789-0002")
+                .put("/eotps/123456789-0002")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.equalTo("123456789-0002"))
@@ -70,7 +70,7 @@ public class EotpRessourceTest {
         expected2.put("isDisabled", false);
 
         given()
-                .when().get("/eotp")
+                .when().get("/eotps")
                 .then()
                 .statusCode(200)
                 .assertThat()
@@ -82,7 +82,7 @@ public class EotpRessourceTest {
     @Test
     public void testPostDeleteEndpoint() {
         int existingItemNumber = given()
-                .when().get("/eotp")
+                .when().get("/eotps")
                 .then()
                 .statusCode(200)
                 .extract().body().jsonPath().getList("$").size();
@@ -92,13 +92,13 @@ public class EotpRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body("{ \"id\": \"9999999999-999989\", \"name\": \"To be deleted\" }")
-                .post("/eotp")
+                .post("/eotps")
                 .then()
                 .statusCode(201)
-                .header("Location", Matchers.equalTo("/eotp/9999999999-999989"));
+                .header("Location", Matchers.equalTo("/eotps/9999999999-999989"));
 
         given()
-                .when().get("/eotp")
+                .when().get("/eotps")
                 .then()
                 .statusCode(200)
                 .assertThat()
@@ -106,19 +106,19 @@ public class EotpRessourceTest {
 
         // Do the delete
         given()
-                .when().delete("/eotp/9999999999-999989")
+                .when().delete("/eotps/9999999999-999989")
                 .then()
                 .statusCode(200);
 
         // Do the delete again, check we get a 404
         given()
-                .when().delete("/eotp/9999999999-999989")
+                .when().delete("/eotps/9999999999-999989")
                 .then()
                 .statusCode(404);
 
         // Check we removed one item
         given()
-                .when().get("/eotp")
+                .when().get("/eotps")
                 .then()
                 .statusCode(200)
                 .assertThat()

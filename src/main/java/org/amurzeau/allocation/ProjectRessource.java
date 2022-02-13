@@ -21,7 +21,7 @@ import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-@Path("/project")
+@Path("/projects")
 public class ProjectRessource {
     private static final Logger LOG = Logger.getLogger(ProjectRessource.class);
 

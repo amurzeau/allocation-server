@@ -38,7 +38,7 @@ public class ApplicationTypeRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(applicationTypes[0])
-                .put("/application_type/web-app")
+                .put("/application-types/web-app")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.equalTo("web-app"))
@@ -50,7 +50,7 @@ public class ApplicationTypeRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(applicationTypes[1])
-                .put("/application_type/web-app")
+                .put("/application-types/web-app")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.equalTo("web-app"))
@@ -62,13 +62,13 @@ public class ApplicationTypeRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(applicationTypes[2])
-                .put("/application_type/" + applicationTypes[2].id)
+                .put("/application-types/" + applicationTypes[2].id)
                 .then()
                 .statusCode(200);
 
         // Test collection contains items
         given()
-                .when().get("/application_type")
+                .when().get("/application-types")
                 .then()
                 .statusCode(200)
                 .assertThat()
@@ -80,7 +80,7 @@ public class ApplicationTypeRessourceTest {
     @Test
     public void testPostDeleteEndpoint() {
         int existingItemNumber = given()
-                .when().get("/application_type")
+                .when().get("/application-types")
                 .then()
                 .statusCode(200)
                 .extract().body().jsonPath().getList("$").size();
@@ -90,13 +90,13 @@ public class ApplicationTypeRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body("{ \"id\": \"delete-me\", \"name\": \"To be deleted\" }")
-                .post("/application_type")
+                .post("/application-types")
                 .then()
                 .statusCode(201)
-                .header("Location", Matchers.equalTo("/application_type/delete-me"));
+                .header("Location", Matchers.equalTo("/application-types/delete-me"));
 
         given()
-                .when().get("/application_type")
+                .when().get("/application-types")
                 .then()
                 .statusCode(200)
                 .assertThat()
@@ -104,19 +104,19 @@ public class ApplicationTypeRessourceTest {
 
         // Do the delete
         given()
-                .when().delete("/application_type/delete-me")
+                .when().delete("/application-types/delete-me")
                 .then()
                 .statusCode(200);
 
         // Do the delete again, check we get a 404
         given()
-                .when().delete("/application_type/delete-me")
+                .when().delete("/application-types/delete-me")
                 .then()
                 .statusCode(404);
 
         // Check we removed one item
         given()
-                .when().get("/application_type")
+                .when().get("/application-types")
                 .then()
                 .statusCode(200)
                 .assertThat()

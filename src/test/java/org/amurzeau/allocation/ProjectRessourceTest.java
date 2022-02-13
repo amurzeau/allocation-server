@@ -40,7 +40,7 @@ public class ProjectRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(String.format("{\"name\": \"%s\"}", name))
-                .put("/eotp/" + id)
+                .put("/eotps/" + id)
                 .then()
                 .statusCode(200);
     }
@@ -50,7 +50,7 @@ public class ProjectRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(String.format("{\"name\": \"%s\"}", name))
-                .put("/application_type/" + id)
+                .put("/application-types/" + id)
                 .then()
                 .statusCode(200);
     }
@@ -81,7 +81,7 @@ public class ProjectRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(applicationTypes[0])
-                .post("/project")
+                .post("/projects")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.greaterThanOrEqualTo(0))
@@ -100,7 +100,7 @@ public class ProjectRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(applicationTypes[1])
-                .put("/project/" + Long.toString(project1Id))
+                .put("/projects/" + Long.toString(project1Id))
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.equalTo(project1Id))
@@ -119,7 +119,7 @@ public class ProjectRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(applicationTypes[2])
-                .post("/project")
+                .post("/projects")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.greaterThan(project1Id))
@@ -127,7 +127,7 @@ public class ProjectRessourceTest {
 
         // Test collection contains item
         given()
-                .when().get("/project")
+                .when().get("/projects")
                 .then()
                 .statusCode(200)
                 .assertThat()
@@ -139,7 +139,7 @@ public class ProjectRessourceTest {
     @Test
     public void testPostDeleteEndpoint() {
         int existingItemNumber = given()
-                .when().get("/project")
+                .when().get("/projects")
                 .then()
                 .statusCode(200)
                 .extract().body().jsonPath().getList("$").size();
@@ -149,7 +149,7 @@ public class ProjectRessourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(applicationTypes[0])
-                .post("/project")
+                .post("/projects")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.greaterThanOrEqualTo(0))
@@ -157,7 +157,7 @@ public class ProjectRessourceTest {
                 .extract().jsonPath().get("id");
 
         given()
-                .when().get("/project")
+                .when().get("/projects")
                 .then()
                 .statusCode(200)
                 .assertThat()
@@ -165,19 +165,19 @@ public class ProjectRessourceTest {
 
         // Do the delete
         given()
-                .when().delete("/project/" + newItemToDeleteId.toString())
+                .when().delete("/projects/" + newItemToDeleteId.toString())
                 .then()
                 .statusCode(200);
 
         // Do the delete again, check we get a 404
         given()
-                .when().delete("/project/" + newItemToDeleteId.toString())
+                .when().delete("/projects/" + newItemToDeleteId.toString())
                 .then()
                 .statusCode(404);
 
         // Check we removed one item
         given()
-                .when().get("/project")
+                .when().get("/projects")
                 .then()
                 .statusCode(200)
                 .assertThat()

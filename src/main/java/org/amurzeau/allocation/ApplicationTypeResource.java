@@ -4,7 +4,7 @@ import javax.ws.rs.Path;
 
 import org.amurzeau.allocation.rest.ApplicationType;
 
-@Path("/application_type")
+@Path("/application-types")
 public class ApplicationTypeResource extends NamedItemRessource<ApplicationType> {
     ApplicationTypeResource() {
         super(ApplicationType.class);

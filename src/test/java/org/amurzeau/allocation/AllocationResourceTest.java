@@ -41,7 +41,7 @@ public class AllocationResourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(String.format("{\"name\": \"%s\"}", name))
-                .put("/eotp/" + id)
+                .put("/eotps/" + id)
                 .then()
                 .statusCode(200);
     }
@@ -51,7 +51,7 @@ public class AllocationResourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(String.format("{\"name\": \"%s\"}", name))
-                .put("/application_type/" + id)
+                .put("/application-types/" + id)
                 .then()
                 .statusCode(200);
     }
@@ -61,7 +61,7 @@ public class AllocationResourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(String.format("{\"name\": \"%s\"}", name))
-                .put("/activity_type/" + id)
+                .put("/activity-types/" + id)
                 .then()
                 .statusCode(200);
     }
@@ -79,7 +79,7 @@ public class AllocationResourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(projectJsonObject)
-                .post("/project")
+                .post("/projects")
                 .then()
                 .statusCode(200)
                 .extract().jsonPath().getInt("id");
@@ -112,7 +112,7 @@ public class AllocationResourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(allocationObjects[0])
-                .post("/allocation")
+                .post("/allocations")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.greaterThanOrEqualTo(0))
@@ -125,7 +125,7 @@ public class AllocationResourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(allocationObjects[1])
-                .put("/allocation/" + Long.toString(allocation1Id))
+                .put("/allocations/" + Long.toString(allocation1Id))
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.equalTo(allocation1Id))
@@ -137,7 +137,7 @@ public class AllocationResourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(allocationObjects[2])
-                .post("/allocation")
+                .post("/allocations")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.greaterThan(allocation1Id))
@@ -146,7 +146,7 @@ public class AllocationResourceTest {
 
         // Test collection contains item
         given()
-                .when().get("/allocation")
+                .when().get("/allocations")
                 .then()
                 .statusCode(200)
                 .assertThat()
@@ -161,7 +161,7 @@ public class AllocationResourceTest {
     @Order(Order.DEFAULT + 1)
     public void testPostDeleteEndpoint() {
         int existingItemNumber = given()
-                .when().get("/allocation")
+                .when().get("/allocations")
                 .then()
                 .statusCode(200)
                 .extract().body().jsonPath().getList("$").size();
@@ -171,7 +171,7 @@ public class AllocationResourceTest {
                 .when()
                 .contentType(ContentType.JSON)
                 .body(allocationObjects[0])
-                .post("/allocation")
+                .post("/allocations")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.greaterThanOrEqualTo(0))
@@ -179,7 +179,7 @@ public class AllocationResourceTest {
                 .extract().jsonPath().get("id");
 
         given()
-                .when().get("/allocation")
+                .when().get("/allocations")
                 .then()
                 .statusCode(200)
                 .assertThat()
@@ -187,19 +187,19 @@ public class AllocationResourceTest {
 
         // Do the delete
         given()
-                .when().delete("/allocation/" + newItemToDeleteId.toString())
+                .when().delete("/allocations/" + newItemToDeleteId.toString())
                 .then()
                 .statusCode(200);
 
         // Do the delete again, check we get a 404
         given()
-                .when().delete("/allocation/" + newItemToDeleteId.toString())
+                .when().delete("/allocations/" + newItemToDeleteId.toString())
                 .then()
                 .statusCode(404);
 
         // Check we removed one item
         given()
-                .when().get("/allocation")
+                .when().get("/allocations")
                 .then()
                 .statusCode(200)
                 .assertThat()
