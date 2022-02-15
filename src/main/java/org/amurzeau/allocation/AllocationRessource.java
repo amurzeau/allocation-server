@@ -32,7 +32,8 @@ public class AllocationRessource {
     public Uni<List<AllocationReply>> getAll() {
         return AllocationReply.<AllocationReply>findAll().list().invoke((List<AllocationReply> l) -> {
             for (AllocationReply projectReply : l) {
-                LOG.infov("Item: {0}: {1}", projectReply.id, projectReply.project.name);
+                LOG.infov("Item: {0}: {1}", projectReply.id,
+                        projectReply.project != null ? projectReply.project.name : "");
             }
         });
     }
@@ -62,7 +63,7 @@ public class AllocationRessource {
                             .invoke((persistedItem) -> {
                                 LOG.infov("Creating new item {0} with project name {1}",
                                         persistedItem.id,
-                                        persistedItem.project.name);
+                                        persistedItem.project != null ? persistedItem.project.name : "");
                             });
                 });
     }
