@@ -3,6 +3,7 @@ package org.amurzeau.allocation;
 import java.net.URI;
 import java.util.List;
 
+import javax.persistence.PersistenceException;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -90,14 +91,22 @@ public class NamedItemRessource<T extends NamedItem> {
     @DELETE
     @Path("{id}")
     public Uni<Response> delete(String id) {
-        return NamedItem.delete(typeParameterClass, id).onItem().transform(res -> {
-            if (res) {
-                return Response.ok().build();
-            } else {
-                return Response.status(Status.NOT_FOUND)
-                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No item with id %s", id))
-                        .build();
-            }
-        });
+        return NamedItem.delete(typeParameterClass, id)
+                .onItem().transform(res -> {
+                    if (res) {
+                        return Response.ok().build();
+                    } else {
+                        return Response.status(Status.NOT_FOUND)
+                                .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No item with id %s", id))
+                                .build();
+                    }
+                })
+                .onFailure(PersistenceException.class).recoverWithItem(res -> {
+                    return Response.status(Status.NOT_ACCEPTABLE)
+                            .entity(ErrorReply.create(ErrorType.CANT_DELETE_REFERENCED,
+                                    "Item id %s is referenced and can't be deleted",
+                                    id))
+                            .build();
+                });
     }
 }

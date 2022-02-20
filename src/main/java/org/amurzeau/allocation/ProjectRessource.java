@@ -6,6 +6,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 import javax.persistence.LockModeType;
+import javax.persistence.PersistenceException;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -165,6 +166,12 @@ public class ProjectRessource {
                         .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
                         .build();
             }
+        }).onFailure(PersistenceException.class).recoverWithItem(res -> {
+            return Response.status(Status.NOT_ACCEPTABLE)
+                    .entity(ErrorReply.create(ErrorType.CANT_DELETE_REFERENCED,
+                            "Project id %s is referenced and can't be deleted",
+                            id))
+                    .build();
         });
     }
 }

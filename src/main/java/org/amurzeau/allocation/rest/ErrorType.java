@@ -5,6 +5,7 @@ public enum ErrorType {
     NOT_EXISTS("item doesn't exists"),
     MISSING_REQUIRED_FIELD("a required field is missing"),
     INVALID_FIELD("a field has an invalid value"),
+    CANT_DELETE_REFERENCED("can't delete item as it is currently referenced"),
     ;
 
     public final String description;
