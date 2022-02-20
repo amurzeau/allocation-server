@@ -14,6 +14,8 @@ import javax.ws.rs.core.Response.Status;
 
 import org.amurzeau.allocation.rest.AllocationReply;
 import org.amurzeau.allocation.rest.AllocationUpdate;
+import org.amurzeau.allocation.rest.ErrorReply;
+import org.amurzeau.allocation.rest.ErrorType;
 import org.jboss.logging.Logger;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
@@ -100,7 +102,7 @@ public class AllocationRessource {
             } else {
                 return Response
                         .status(Status.NOT_FOUND)
-                        .entity(String.format("No project with id %s", id))
+                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
                         .build();
             }
         });
@@ -127,7 +129,8 @@ public class AllocationRessource {
             } else {
                 return Response
                         .status(Status.NOT_FOUND)
-                        .entity(String.format("No project with id %s", id))
+                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s",
+                                id))
                         .build();
             }
         });

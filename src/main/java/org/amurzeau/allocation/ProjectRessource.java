@@ -15,6 +15,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.amurzeau.allocation.rest.Eotp;
+import org.amurzeau.allocation.rest.ErrorReply;
+import org.amurzeau.allocation.rest.ErrorType;
 import org.amurzeau.allocation.rest.ProjectReply;
 import org.amurzeau.allocation.rest.ProjectUpdate;
 import org.jboss.logging.Logger;
@@ -95,7 +97,8 @@ public class ProjectRessource {
                 .onItem().<ProjectReply>transformToUni(item -> {
                     return item.<ProjectReply>persist()
                             .invoke((persistedItem) -> {
-                                LOG.infov("Creating new item {0} with name {1}", persistedItem.id, persistedItem.name);
+                                LOG.infov("Creating new item {0} with name {1}", persistedItem.id,
+                                        persistedItem.name);
                             });
                 });
     }
@@ -132,7 +135,7 @@ public class ProjectRessource {
             } else {
                 return Response
                         .status(Status.NOT_FOUND)
-                        .entity(String.format("No project with id %s", id))
+                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
                         .build();
             }
         });
@@ -159,7 +162,7 @@ public class ProjectRessource {
             } else {
                 return Response
                         .status(Status.NOT_FOUND)
-                        .entity(String.format("No project with id %s", id))
+                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
                         .build();
             }
         });
