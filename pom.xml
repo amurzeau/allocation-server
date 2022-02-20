@@ -112,6 +112,7 @@
                 <version>${frontend-maven-plugin.version}</version>
                 <configuration>
                     <nodeVersion>v16.13.2</nodeVersion>
+                    <workingDirectory>src/main/webapp</workingDirectory>
                 </configuration>
                 <executions>
                     <execution>
@@ -119,7 +120,7 @@
                         <goals>
                             <goal>install-node-and-npm</goal>
                         </goals>
-                        <phase>generate-resources</phase>
+                        <phase>prepare-package</phase>
                     </execution>
                     <execution>
                         <id>prod</id>
@@ -128,9 +129,8 @@
                         </goals>
                         <configuration>
                             <arguments>run-script build</arguments>
-                            <workingDirectory>src/main/webapp</workingDirectory>
                         </configuration>
-                        <phase>generate-resources</phase>
+                        <phase>prepare-package</phase>
                     </execution>
                 </executions>
             </plugin>
