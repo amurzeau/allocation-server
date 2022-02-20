@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 
 import org.amurzeau.allocation.ProjectRessourceTest.ProjectJsonObject;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,17 @@ public class AllocationResourceTest {
             new AllocationJsonObject(1, "support", BigDecimal.valueOf(1.25)),
             new AllocationJsonObject(0, "dev", BigDecimal.valueOf(5)),
     };
+
+    static private void deleteItem(String id) {
+        given()
+                .when().delete("/activity-types/" + id);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        deleteItem("dev");
+        deleteItem("support");
+    }
 
     public void createEotp(String id, String name) {
         given()

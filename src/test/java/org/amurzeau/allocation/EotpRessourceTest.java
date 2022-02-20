@@ -38,7 +38,7 @@ public class EotpRessourceTest {
         given()
                 .when()
                 .contentType(ContentType.JSON)
-                .body("{\"name\": \"Application X initial development\" }")
+                .body("{\"name\": \"Application X initial development\", \"isDisabled\": false }")
                 .put("/eotps/123456789-0001")
                 .then()
                 .statusCode(200)

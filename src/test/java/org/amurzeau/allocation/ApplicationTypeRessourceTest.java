@@ -21,7 +21,7 @@ public class ApplicationTypeRessourceTest {
     }
 
     public static ApplicationTypeJsonObject[] applicationTypes = {
-            new ApplicationTypeJsonObject("web-app1", "Web Application1", true),
+            new ApplicationTypeJsonObject("web-app", "Web Application1", true),
             new ApplicationTypeJsonObject("web-app", "Web Application", false),
             new ApplicationTypeJsonObject("desktop-app", "Desktop Application", false),
             new ApplicationTypeJsonObject("firmware", "Firmware", false),

@@ -14,10 +14,12 @@ import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.quarkus.hibernate.reactive.panache.PanacheQuery;
 import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
 import io.smallrye.mutiny.Uni;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
 
 @MappedSuperclass
 @FieldNameConstants
+@EqualsAndHashCode(callSuper = true)
 public class NamedItem extends PanacheEntityBase {
     private static final Logger LOG = Logger.getLogger(NamedItem.class);
 
@@ -27,40 +29,49 @@ public class NamedItem extends PanacheEntityBase {
     @NotBlank
     public String name;
 
-    public boolean isDisabled;
+    public Boolean isDisabled;
 
-    public static String getQueryStringById() {
-        return String.format("%s = ?1 and %s = false", NamedItem.Fields.id, NamedItem.Fields.isDisabled);
-    }
+    public static <T extends NamedItem> Uni<List<T>> getAll(Class<T> entityClass, Boolean deleted) {
+        PanacheQuery<T> result;
 
-    public static <T extends NamedItem> Uni<List<T>> getAll(Class<T> entityClass) {
-        @SuppressWarnings("unchecked")
-        PanacheQuery<T> var = (PanacheQuery<T>) JpaOperations.INSTANCE.find(entityClass,
-                ActivityType.Fields.isDisabled, false);
+        if (deleted != null && deleted == true) {
+            @SuppressWarnings("unchecked")
+            PanacheQuery<T> var = (PanacheQuery<T>) JpaOperations.INSTANCE.findAll(entityClass);
+            result = var;
+        } else {
+            @SuppressWarnings("unchecked")
+            PanacheQuery<T> var = (PanacheQuery<T>) JpaOperations.INSTANCE.find(entityClass,
+                    ActivityType.Fields.isDisabled, false);
+            result = var;
+        }
 
-        return var.list();
+        return result.list();
     }
 
     public static <T extends NamedItem> Uni<T> getById(Class<T> entityClass, String id) {
         @SuppressWarnings("unchecked")
-        PanacheQuery<T> var = (PanacheQuery<T>) JpaOperations.INSTANCE.find(entityClass,
-                getQueryStringById(), id);
+        Uni<T> var = (Uni<T>) JpaOperations.INSTANCE.findById(entityClass, id);
 
-        return var.firstResult();
+        return var;
     }
 
     public static <T extends NamedItem> Uni<Boolean> postCreate(T entity) {
+        if (entity.isDisabled == null)
+            entity.isDisabled = false;
+
         return Panache.withTransaction(() -> {
-            return getById(entity.getClass(), entity.id)
-                    .onItem().<Boolean>transformToUni(item -> {
-                        if (item == null) {
-                            LOG.infov("Creating new item {0} with name {1}", entity.id, entity.name);
-                            return JpaOperations.INSTANCE.persist(entity).replaceWith(Boolean.TRUE);
-                        } else {
-                            LOG.infov("Can't create {0}, already existing with name {1}", item.id, item.name);
-                            return Uni.createFrom().item(Boolean.FALSE);
-                        }
-                    });
+            @SuppressWarnings("unchecked")
+            Uni<T> var = (Uni<T>) JpaOperations.INSTANCE.findById(entity.getClass(), entity.id);
+
+            return var.onItem().<Boolean>transformToUni(item -> {
+                if (item == null) {
+                    LOG.infov("Creating new item {0} with name {1}", entity.id, entity.name);
+                    return JpaOperations.INSTANCE.persist(entity).replaceWith(Boolean.TRUE);
+                } else {
+                    LOG.infov("Can't create {0}, already existing with name {1}", item.id, item.name);
+                    return Uni.createFrom().item(Boolean.FALSE);
+                }
+            });
         });
     }
 
@@ -75,18 +86,24 @@ public class NamedItem extends PanacheEntityBase {
                     LOG.infov("Creating new item {0} with name {1}", id, value.name);
                     updatedItem = value;
                     updatedItem.id = id;
+
+                    if (updatedItem.isDisabled == null)
+                        updatedItem.isDisabled = false;
                 } else {
                     LOG.infov("Updating item {0} with name {1}", item.id, value.name);
                     updatedItem = item;
-                    updatedItem.name = value.name;
-                    updatedItem.isDisabled = value.isDisabled;
+
+                    if (value.name != null)
+                        updatedItem.name = value.name;
+
+                    if (value.isDisabled != null)
+                        updatedItem.isDisabled = value.isDisabled;
                 }
 
                 return updatedItem.persist();
-            })
-                    .onFailure().invoke((e) -> {
-                        LOG.errorv("Failure: {0}", e);
-                    });
+            }).onFailure().invoke((e) -> {
+                LOG.errorv("Failure: {0}", e);
+            });
         });
     }
 

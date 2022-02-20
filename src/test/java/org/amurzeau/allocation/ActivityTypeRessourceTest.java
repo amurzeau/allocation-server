@@ -5,6 +5,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +20,17 @@ public class ActivityTypeRessourceTest {
     @BeforeAll
     static public void setUp() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+    }
+
+    static private void deleteItem(String id) {
+        given()
+                .when().delete("/activity-types/" + id);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        deleteItem("dev");
+        deleteItem("support");
     }
 
     @Test
@@ -38,7 +50,7 @@ public class ActivityTypeRessourceTest {
         given()
                 .when()
                 .contentType(ContentType.JSON)
-                .body("{\"name\": \"Development\" }")
+                .body("{\"name\": \"Development\", \"isDisabled\": false }")
                 .put("/activity-types/dev")
                 .then()
                 .statusCode(200)

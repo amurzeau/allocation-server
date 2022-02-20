@@ -1,7 +1,8 @@
 package org.amurzeau.allocation;
 
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.persistence.LockModeType;
@@ -13,6 +14,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.amurzeau.allocation.rest.Eotp;
 import org.amurzeau.allocation.rest.ProjectReply;
 import org.amurzeau.allocation.rest.ProjectUpdate;
 import org.jboss.logging.Logger;
@@ -45,35 +47,47 @@ public class ProjectRessource {
         return ProjectReply.findById(id);
     }
 
+    private Uni<Void> fetchEotps(List<String> eotps, Set<Eotp> eotpList) {
+        Uni<Void> uni;
+
+        if (eotps != null) {
+            uni = Multi.createFrom().iterable(eotps)
+                    .onItem().transformToUniAndConcatenate(eotpId -> {
+                        return eotpRessource.getById(eotpId).invoke(eotp -> {
+                            if (eotp != null)
+                                eotpList.add(eotp);
+                        }).replaceWith(true);
+                    })
+                    .onItem().ignoreAsUni();
+        } else {
+            uni = Uni.createFrom().nullItem();
+        }
+
+        return uni;
+    }
+
     private Uni<ProjectReply> createOrUpdateProject(ProjectReply project, ProjectUpdate value) {
         project.name = value.name;
         project.board = value.board;
         project.component = value.component;
         project.arch = value.arch;
-        project.eotpOpen = new ArrayList<>();
-        project.eotpClosed = new ArrayList<>();
+
+        if (project.eotpOpen != null)
+            project.eotpOpen.clear();
+        else
+            project.eotpOpen = new LinkedHashSet<>();
+
+        if (project.eotpClosed != null)
+            project.eotpClosed.clear();
+        else
+            project.eotpClosed = new LinkedHashSet<>();
 
         Uni<?> projectTypeUni = applicationTypeResource.getById(value.type).invoke(v -> {
             project.type = v;
         });
 
-        Uni<Void> eotpOpenUni = Multi.createFrom().iterable(value.eotpOpen)
-                .onItem().transformToUniAndConcatenate(eotpId -> {
-                    return eotpRessource.getById(eotpId).invoke(eotp -> {
-                        if (eotp != null)
-                            project.eotpOpen.add(eotp);
-                    }).replaceWithVoid();
-                })
-                .onItem().ignoreAsUni();
-
-        Uni<Void> eotpClosedUni = Multi.createFrom().iterable(value.eotpClosed)
-                .onItem().transformToUniAndConcatenate(eotpId -> {
-                    return eotpRessource.getById(eotpId).invoke(eotp -> {
-                        if (eotp != null)
-                            project.eotpClosed.add(eotp);
-                    }).replaceWithVoid();
-                })
-                .onItem().ignoreAsUni();
+        Uni<Void> eotpOpenUni = fetchEotps(value.eotpOpen, project.eotpOpen);
+        Uni<Void> eotpClosedUni = fetchEotps(value.eotpClosed, project.eotpClosed);
 
         return Uni.combine().all().unis(projectTypeUni, eotpOpenUni, eotpClosedUni)
                 .discardItems()

@@ -1,6 +1,6 @@
 package org.amurzeau.allocation.rest;
 
-import java.util.List;
+import java.util.Set;
 
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -31,10 +31,10 @@ public class ProjectReply extends PanacheEntity {
     @ManyToMany(fetch = FetchType.EAGER)
     @Fetch(value = FetchMode.SUBSELECT)
     @JoinTable(name = "Project_Eotp_eotpOpen")
-    public List<Eotp> eotpOpen;
+    public Set<Eotp> eotpOpen;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @Fetch(value = FetchMode.SUBSELECT)
     @JoinTable(name = "Project_Eotp_eotpClosed")
-    public List<Eotp> eotpClosed;
+    public Set<Eotp> eotpClosed;
 }

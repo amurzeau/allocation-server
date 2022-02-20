@@ -13,6 +13,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.amurzeau.allocation.rest.NamedItem;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse.Status;
 
 import io.smallrye.mutiny.Uni;
@@ -26,8 +27,8 @@ public class NamedItemRessource<T extends NamedItem> {
     }
 
     @GET
-    public Uni<List<T>> getAll() {
-        return NamedItem.getAll(typeParameterClass);
+    public Uni<List<T>> getAll(@RestQuery Boolean deleted) {
+        return NamedItem.getAll(typeParameterClass, deleted);
     }
 
     @GET
