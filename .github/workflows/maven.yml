@@ -27,5 +27,10 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
+    - uses: actions/setup-node@v2
+      with:
+        cache: 'npm'
+        cache-dependency-path: src/main/webapp/package-lock.json
+
     - name: Build with Maven
       run: mvn -B package --file pom.xml
