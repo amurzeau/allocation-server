@@ -101,8 +101,6 @@ public class NamedItem extends PanacheEntityBase {
                 }
 
                 return updatedItem.persist();
-            }).onFailure().invoke((e) -> {
-                LOG.errorv("Failure: {0}", e);
             });
         });
     }

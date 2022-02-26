@@ -7,75 +7,78 @@ import lombok.AllArgsConstructor;
 
 import org.amurzeau.allocation.ProjectRessourceTest.ProjectJsonObject;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 
-import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
+import java.util.Map;
 
 @QuarkusTest
 public class AllocationResourceTest {
+    private Map<String, String> createdRessources = new HashMap<>();
+
     @AllArgsConstructor
     public static class AllocationJsonObject {
         public Integer projectId;
 
         public String activityTypeId;
 
-        @JsonFormat(shape = JsonFormat.Shape.STRING)
-        public BigDecimal duration;
+        public Float duration;
     }
 
     public static AllocationJsonObject[] allocationObjects = {
-            new AllocationJsonObject(0, "dev", BigDecimal.valueOf(0.25)),
-            new AllocationJsonObject(1, "support", BigDecimal.valueOf(1.25)),
-            new AllocationJsonObject(0, "dev", BigDecimal.valueOf(5)),
+            new AllocationJsonObject(0, "dev", 0.25f),
+            new AllocationJsonObject(1, "support", 1.25f),
+            new AllocationJsonObject(0, "dev", 5f),
     };
 
-    static private void deleteItem(String id) {
-        given()
-                .when().delete("/activity-types/" + id);
-    }
-
-    @AfterEach
-    public void tearDown() {
-        deleteItem("dev");
-        deleteItem("support");
+    private void deleteAllItems() {
+        for (Map.Entry<String, String> item : createdRessources.entrySet()) {
+            given()
+                    .when()
+                    .pathParam("endpoint", item.getKey())
+                    .pathParam("id", item.getValue())
+                    .delete("/{endpoint}/{id}");
+        }
     }
 
     public void createEotp(String id, String name) {
         given()
                 .when()
                 .contentType(ContentType.JSON)
-                .body(String.format("{\"name\": \"%s\"}", name))
+                .body(String.format("{\"id\": \"%s\", \"name\": \"%s\"}", id, name))
                 .put("/eotps/" + id)
                 .then()
                 .statusCode(200);
+
+        createdRessources.put("eotps", id);
     }
 
     public void createApplicationType(String id, String name) {
         given()
                 .when()
                 .contentType(ContentType.JSON)
-                .body(String.format("{\"name\": \"%s\"}", name))
+                .body(String.format("{\"id\": \"%s\", \"name\": \"%s\"}", id, name))
                 .put("/application-types/" + id)
                 .then()
                 .statusCode(200);
+
+        createdRessources.put("application-types", id);
     }
 
     public void createActivityType(String id, String name) {
         given()
                 .when()
                 .contentType(ContentType.JSON)
-                .body(String.format("{\"name\": \"%s\"}", name))
+                .body(String.format("{\"id\": \"%s\", \"name\": \"%s\"}", id, name))
                 .put("/activity-types/" + id)
                 .then()
                 .statusCode(200);
+
+        createdRessources.put("activity-types", id);
     }
 
     public Integer createProject(String name, String applicationType, String eotp) {
@@ -87,7 +90,7 @@ public class AllocationResourceTest {
                 applicationType,
                 List.of(eotp), List.of());
 
-        return given()
+        Integer projectId = given()
                 .when()
                 .contentType(ContentType.JSON)
                 .body(projectJsonObject)
@@ -95,6 +98,10 @@ public class AllocationResourceTest {
                 .then()
                 .statusCode(200)
                 .extract().jsonPath().getInt("id");
+
+        createdRessources.put("projects", projectId.toString());
+
+        return projectId;
     }
 
     @BeforeAll
@@ -103,7 +110,7 @@ public class AllocationResourceTest {
     }
 
     @Test
-    public void testPutNewItemEndpoint() {
+    public void testAllocationEndpoint() {
         createEotp("1000-1", "EOTP for project X");
         createEotp("2000-2", "EOTP for project Y");
 
@@ -120,32 +127,80 @@ public class AllocationResourceTest {
         allocationObjects[1].projectId = project2Id;
         allocationObjects[2].projectId = project1Id;
 
+        // Post valid empty item
         Integer allocation1Id = given()
                 .when()
                 .contentType(ContentType.JSON)
-                .body(allocationObjects[0])
+                .body("{}")
                 .post("/allocations")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.greaterThanOrEqualTo(0))
-                .body("project.id", Matchers.equalTo(project1Id))
-                .body("duration", Matchers.equalTo(0.25f))
                 .extract().jsonPath().get("id");
 
-        // Test overwriting existing value
+        // Get with empty items
+        given()
+                .when()
+                .contentType(ContentType.JSON)
+                .get("/allocations")
+                .then()
+                .statusCode(200);
+
+        // Put overwriting existing value
         given()
                 .when()
                 .contentType(ContentType.JSON)
                 .body(allocationObjects[1])
-                .put("/allocations/" + Long.toString(allocation1Id))
+                .pathParam("id", allocation1Id)
+                .put("/allocations/{id}")
                 .then()
                 .statusCode(200)
                 .body("id", Matchers.equalTo(allocation1Id))
                 .body("project.id", Matchers.equalTo(project2Id))
+                .body("activityType.id", Matchers.equalTo(allocationObjects[1].activityTypeId))
                 .body("duration", Matchers.equalTo(1.25f));
 
-        // Add second item
+        // Get single item
         given()
+                .when()
+                .contentType(ContentType.JSON)
+                .pathParam("id", allocation1Id)
+                .get("/allocations/{id}")
+                .then()
+                .statusCode(200)
+                .body("id", Matchers.equalTo(allocation1Id))
+                .body("project.id", Matchers.equalTo(project2Id))
+                .body("activityType.id", Matchers.equalTo(allocationObjects[1].activityTypeId))
+                .body("duration", Matchers.equalTo(1.25f));
+
+        // Test delete used project
+        given()
+                .when()
+                .pathParam("id", project2Id)
+                .delete("/projects/{id}")
+                .then()
+                .statusCode(406);
+
+        // Test delete used activity
+        given()
+                .when()
+                .pathParam("id", allocationObjects[1].activityTypeId)
+                .delete("/activity-types/{id}")
+                .then()
+                .statusCode(406);
+
+        // Test updating non existing ID
+        given()
+                .when()
+                .contentType(ContentType.JSON)
+                .body(allocationObjects[1])
+                .pathParam("id", 1000000000)
+                .put("/allocations/{id}")
+                .then()
+                .statusCode(404);
+
+        // Add second item
+        Integer allocation2Id = given()
                 .when()
                 .contentType(ContentType.JSON)
                 .body(allocationObjects[2])
@@ -154,7 +209,9 @@ public class AllocationResourceTest {
                 .statusCode(200)
                 .body("id", Matchers.greaterThan(allocation1Id))
                 .body("project.id", Matchers.equalTo(project1Id))
-                .body("duration", Matchers.equalTo(5));
+                .body("activityType.id", Matchers.equalTo(allocationObjects[2].activityTypeId))
+                .body("duration", Matchers.equalTo(allocationObjects[2].duration))
+                .extract().jsonPath().get("id");
 
         // Test collection contains item
         given()
@@ -162,59 +219,56 @@ public class AllocationResourceTest {
                 .then()
                 .statusCode(200)
                 .assertThat()
-                .body("size()", Matchers.is(2))
-                .body("[0].project.id", Matchers.equalTo(project2Id))
-                .body("[0].duration", Matchers.equalTo(1.25f))
-                .body("[1].project.id", Matchers.equalTo(project1Id))
-                .body("[1].duration", Matchers.equalTo(5f));
-    }
-
-    @Test
-    @Order(Order.DEFAULT + 1)
-    public void testPostDeleteEndpoint() {
-        int existingItemNumber = given()
-                .when().get("/allocations")
-                .then()
-                .statusCode(200)
-                .extract().body().jsonPath().getList("$").size();
-
-        // Add item
-        Integer newItemToDeleteId = given()
-                .when()
-                .contentType(ContentType.JSON)
-                .body(allocationObjects[0])
-                .post("/allocations")
-                .then()
-                .statusCode(200)
-                .body("id", Matchers.greaterThanOrEqualTo(0))
-                .body("duration", Matchers.equalTo(0.25f))
-                .extract().jsonPath().get("id");
-
-        given()
-                .when().get("/allocations")
-                .then()
-                .statusCode(200)
-                .assertThat()
-                .body("size()", Matchers.is(existingItemNumber + 1));
+                .body("find { it.id == %d }.project.id", RestAssured.withArgs(allocation1Id),
+                        Matchers.equalTo(allocationObjects[1].projectId))
+                .body("find { it.id == %d }.activityType.id", RestAssured.withArgs(allocation1Id),
+                        Matchers.equalTo(allocationObjects[1].activityTypeId))
+                .body("find { it.id == %d }.duration", RestAssured.withArgs(allocation1Id),
+                        Matchers.equalTo(allocationObjects[1].duration))
+                .body("find { it.id == %d }.project.id", RestAssured.withArgs(allocation2Id),
+                        Matchers.equalTo(allocationObjects[2].projectId))
+                .body("find { it.id == %d }.activityType.id", RestAssured.withArgs(allocation2Id),
+                        Matchers.equalTo(allocationObjects[2].activityTypeId))
+                .body("find { it.id == %d }.duration", RestAssured.withArgs(allocation2Id),
+                        Matchers.equalTo(allocationObjects[2].duration));
 
         // Do the delete
         given()
-                .when().delete("/allocations/" + newItemToDeleteId.toString())
+                .when()
+                .pathParam("id", allocation1Id)
+                .delete("/allocations/{id}")
+                .then()
+                .statusCode(200);
+        given()
+                .when()
+                .pathParam("id", allocation2Id)
+                .delete("/allocations/{id}")
                 .then()
                 .statusCode(200);
 
         // Do the delete again, check we get a 404
         given()
-                .when().delete("/allocations/" + newItemToDeleteId.toString())
+                .when()
+                .pathParam("id", allocation1Id)
+                .delete("/allocations/{id}")
+                .then()
+                .statusCode(404);
+        given()
+                .when()
+                .pathParam("id", allocation2Id)
+                .delete("/allocations/{id}")
                 .then()
                 .statusCode(404);
 
-        // Check we removed one item
+        // Get non existing item
         given()
-                .when().get("/allocations")
+                .when()
+                .contentType(ContentType.JSON)
+                .pathParam("id", allocation1Id)
+                .get("/allocations/{id}")
                 .then()
-                .statusCode(200)
-                .assertThat()
-                .body("size()", Matchers.is(existingItemNumber));
+                .statusCode(404);
+
+        deleteAllItems();
     }
 }

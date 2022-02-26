@@ -4,7 +4,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.inject.Inject;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceException;
 import javax.ws.rs.DELETE;
@@ -15,9 +14,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.amurzeau.allocation.rest.ApplicationType;
 import org.amurzeau.allocation.rest.Eotp;
 import org.amurzeau.allocation.rest.ErrorReply;
 import org.amurzeau.allocation.rest.ErrorType;
+import org.amurzeau.allocation.rest.NamedItem;
 import org.amurzeau.allocation.rest.ProjectReply;
 import org.amurzeau.allocation.rest.ProjectUpdate;
 import org.jboss.logging.Logger;
@@ -30,11 +31,6 @@ import io.smallrye.mutiny.Uni;
 public class ProjectRessource {
     private static final Logger LOG = Logger.getLogger(ProjectRessource.class);
 
-    @Inject
-    ApplicationTypeResource applicationTypeResource;
-    @Inject
-    EotpRessource eotpRessource;
-
     @GET
     public Uni<List<ProjectReply>> getAll() {
         return ProjectReply.<ProjectReply>findAll().list().invoke((List<ProjectReply> l) -> {
@@ -46,8 +42,17 @@ public class ProjectRessource {
 
     @GET
     @Path("{id}")
-    public Uni<ProjectReply> getById(Long id) {
-        return ProjectReply.findById(id);
+    public Uni<Response> getById(Long id) {
+        return ProjectReply.findById(id).onItem().transform(project -> {
+            if (project != null) {
+                return Response.ok(project).build();
+            } else {
+                return Response
+                        .status(Status.NOT_FOUND)
+                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
+                        .build();
+            }
+        });
     }
 
     private Uni<Void> fetchEotps(List<String> eotps, Set<Eotp> eotpList) {
@@ -56,7 +61,7 @@ public class ProjectRessource {
         if (eotps != null) {
             uni = Multi.createFrom().iterable(eotps)
                     .onItem().transformToUniAndConcatenate(eotpId -> {
-                        return eotpRessource.getById(eotpId).invoke(eotp -> {
+                        return NamedItem.getById(Eotp.class, eotpId).invoke(eotp -> {
                             if (eotp != null)
                                 eotpList.add(eotp);
                         }).replaceWith(true);
@@ -85,7 +90,7 @@ public class ProjectRessource {
         else
             project.eotpClosed = new LinkedHashSet<>();
 
-        Uni<?> projectTypeUni = applicationTypeResource.getById(value.type).invoke(v -> {
+        Uni<?> projectTypeUni = NamedItem.getById(ApplicationType.class, value.type).invoke(v -> {
             project.type = v;
         });
 
@@ -123,12 +128,9 @@ public class ProjectRessource {
                     .onItem().<ProjectReply>transformToUni(item -> {
                         if (item == null) {
                             LOG.infov("No project with id {0}", id);
-                            return Uni.createFrom().item(null);
+                            return Uni.createFrom().nullItem();
                         }
                         return createOrUpdateProject(item, value);
-                    })
-                    .onFailure().invoke((e) -> {
-                        LOG.errorv("Failure: {0}", e);
                     });
         }).onItem().transform(res -> {
             if (res != null) {
@@ -153,9 +155,6 @@ public class ProjectRessource {
                             return item.delete().replaceWith(true);
                         else
                             return Uni.createFrom().item(false);
-                    })
-                    .onFailure().invoke((e) -> {
-                        LOG.errorv("Failure: {0}", e);
                     });
         }).onItem().transform(res -> {
             if (res) {

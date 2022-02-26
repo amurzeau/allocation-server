@@ -12,10 +12,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.amurzeau.allocation.rest.ActivityType;
 import org.amurzeau.allocation.rest.AllocationReply;
 import org.amurzeau.allocation.rest.AllocationUpdate;
 import org.amurzeau.allocation.rest.ErrorReply;
 import org.amurzeau.allocation.rest.ErrorType;
+import org.amurzeau.allocation.rest.NamedItem;
+import org.amurzeau.allocation.rest.ProjectReply;
 import org.jboss.logging.Logger;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
@@ -25,8 +28,6 @@ import io.smallrye.mutiny.Uni;
 public class AllocationRessource {
     private static final Logger LOG = Logger.getLogger(AllocationRessource.class);
 
-    @Inject
-    ActivityTypeRessource activityTypeRessource;
     @Inject
     ProjectRessource projectRessource;
 
@@ -42,18 +43,27 @@ public class AllocationRessource {
 
     @GET
     @Path("{id}")
-    public Uni<AllocationReply> getById(Long id) {
-        return AllocationReply.findById(id);
+    public Uni<Response> getById(Long id) {
+        return AllocationReply.findById(id).onItem().transform(allocation -> {
+            if (allocation != null) {
+                return Response.ok(allocation).build();
+            } else {
+                return Response
+                        .status(Status.NOT_FOUND)
+                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No allocation with id %s", id))
+                        .build();
+            }
+        });
     }
 
     private Uni<AllocationReply> createOrUpdateProject(AllocationReply replyItem, AllocationUpdate value) {
         replyItem.duration = value.duration;
 
-        Uni<?> projectUni = projectRessource.getById(value.projectId).invoke(v -> {
+        Uni<?> projectUni = ProjectReply.<ProjectReply>findById(value.projectId).invoke(v -> {
             replyItem.project = v;
         });
 
-        Uni<?> activityTypeUni = activityTypeRessource.getById(value.activityTypeId).invoke(v -> {
+        Uni<?> activityTypeUni = NamedItem.getById(ActivityType.class, value.activityTypeId).invoke(v -> {
             replyItem.activityType = v;
         });
 
@@ -88,13 +98,10 @@ public class AllocationRessource {
             return var
                     .onItem().<AllocationReply>transformToUni(item -> {
                         if (item == null) {
-                            LOG.infov("No project with id {0}", id);
-                            return Uni.createFrom().item(null);
+                            LOG.infov("No allocation with id {0}", id);
+                            return Uni.createFrom().nullItem();
                         }
                         return createOrUpdateProject(item, value);
-                    })
-                    .onFailure().invoke((e) -> {
-                        LOG.errorv("Failure: {0}", e);
                     });
         }).onItem().transform(res -> {
             if (res != null) {
@@ -102,7 +109,7 @@ public class AllocationRessource {
             } else {
                 return Response
                         .status(Status.NOT_FOUND)
-                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
+                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No allocation with id %s", id))
                         .build();
             }
         });
@@ -119,9 +126,6 @@ public class AllocationRessource {
                             return item.delete().replaceWith(true);
                         else
                             return Uni.createFrom().item(false);
-                    })
-                    .onFailure().invoke((e) -> {
-                        LOG.errorv("Failure: {0}", e);
                     });
         }).onItem().transform(res -> {
             if (res) {
@@ -129,7 +133,7 @@ public class AllocationRessource {
             } else {
                 return Response
                         .status(Status.NOT_FOUND)
-                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s",
+                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No allocation with id %s",
                                 id))
                         .build();
             }

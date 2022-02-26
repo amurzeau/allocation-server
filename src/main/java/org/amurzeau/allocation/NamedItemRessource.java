@@ -1,6 +1,5 @@
 package org.amurzeau.allocation;
 
-import java.net.URI;
 import java.util.List;
 
 import javax.persistence.PersistenceException;
@@ -36,8 +35,17 @@ public class NamedItemRessource<T extends NamedItem> {
 
     @GET
     @Path("{id}")
-    public Uni<T> getById(String id) {
-        return NamedItem.getById(typeParameterClass, id);
+    public Uni<Response> getById(String id) {
+        return NamedItem.getById(typeParameterClass, id).onItem().transform(item -> {
+            if (item != null) {
+                return Response.ok(item).build();
+            } else {
+                return Response
+                        .status(Status.NOT_FOUND)
+                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No item with id %s", id))
+                        .build();
+            }
+        });
     }
 
     @POST
@@ -59,7 +67,7 @@ public class NamedItemRessource<T extends NamedItem> {
 
         return NamedItem.postCreate(value).onItem().transform(res -> {
             if (res) {
-                return Response.created(URI.create(uriInfo.getPath() + "/" + value.id)).build();
+                return Response.ok(value).build();
             } else {
                 return Response.status(Status.CONFLICT).build();
             }
@@ -76,7 +84,14 @@ public class NamedItemRessource<T extends NamedItem> {
                     .build());
         }
 
-        if (value.id != null && !id.equals(value.id)) {
+        if (value.id == null) {
+            LOG.errorv("id within object is null", id);
+            return Uni.createFrom().item(Response.status(Status.NOT_ACCEPTABLE)
+                    .entity(ErrorReply.create(ErrorType.INVALID_FIELD, "id must not be null"))
+                    .build());
+        }
+
+        if (!id.equals(value.id)) {
             LOG.errorv("id from URL is not the same as id within object", id);
             return Uni.createFrom().item(Response.status(Status.NOT_ACCEPTABLE)
                     .entity(ErrorReply.create(ErrorType.INVALID_FIELD, "id field is not the same as in the URL"))
