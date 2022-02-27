@@ -41,9 +41,9 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: allocation-server
-        path: target/*-runner.jar
+        path: target/quarkus-app
 
-    - name: Log in to Docker Hub
+    - name: Log in to Github Packages
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
       with:
         registry: ${{ env.REGISTRY }}
