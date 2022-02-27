@@ -38,12 +38,8 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
-    - uses: actions/upload-artifact@v2
-      with:
-        name: allocation-server
-        path: target/quarkus-app
-
     - name: Log in to Github Packages
+      if: github.event_name != 'pull_request'
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
       with:
         registry: ${{ env.REGISTRY }}
@@ -61,6 +57,22 @@ jobs:
       with:
         context: .
         file: "./src/main/docker/Dockerfile.jvm"
-        push: true
+        push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+
+    - name: Package quarkus-app to tar.gz
+      run: tar -czf allocations-server.tar.gz -C target quarkus-app
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: allocation-server
+        path: allocations-server.tar.gz
+
+    - name: Publish
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+          files: 'allocations-server.tar.gz'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
