@@ -32,8 +32,12 @@ jobs:
 
     - uses: actions/setup-node@v2
       with:
+        fetch-depth: 0
         cache: 'npm'
         cache-dependency-path: src/main/webapp/package-lock.json
+
+    - name: Adjust project version in pom.xml
+      run: mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$(git describe --tags --always)
 
     - name: Build with Maven
       run: mvn -B package --file pom.xml
