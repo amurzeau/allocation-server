@@ -17,8 +17,8 @@ import org.amurzeau.allocation.rest.AllocationReply;
 import org.amurzeau.allocation.rest.AllocationUpdate;
 import org.amurzeau.allocation.rest.ErrorReply;
 import org.amurzeau.allocation.rest.ErrorType;
-import org.amurzeau.allocation.rest.NamedItem;
 import org.amurzeau.allocation.rest.ProjectReply;
+import org.amurzeau.allocation.services.NamedItemService;
 import org.jboss.logging.Logger;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
@@ -30,6 +30,9 @@ public class AllocationRessource {
 
     @Inject
     ProjectRessource projectRessource;
+
+    @Inject
+    NamedItemService namedItemService;
 
     @GET
     public Uni<List<AllocationReply>> getAll() {
@@ -63,7 +66,7 @@ public class AllocationRessource {
             replyItem.project = v;
         });
 
-        Uni<?> activityTypeUni = NamedItem.getById(ActivityType.class, value.activityTypeId).invoke(v -> {
+        Uni<?> activityTypeUni = namedItemService.getById(ActivityType.class, value.activityTypeId).invoke(v -> {
             replyItem.activityType = v;
         });
 

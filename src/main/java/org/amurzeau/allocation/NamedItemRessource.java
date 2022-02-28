@@ -2,6 +2,7 @@ package org.amurzeau.allocation;
 
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.persistence.PersistenceException;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -14,6 +15,7 @@ import javax.ws.rs.core.UriInfo;
 import org.amurzeau.allocation.rest.ErrorReply;
 import org.amurzeau.allocation.rest.ErrorType;
 import org.amurzeau.allocation.rest.NamedItem;
+import org.amurzeau.allocation.services.NamedItemService;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse.Status;
@@ -24,19 +26,22 @@ public class NamedItemRessource<T extends NamedItem> {
     private static final Logger LOG = Logger.getLogger(NamedItemRessource.class);
     private final Class<T> typeParameterClass;
 
+    @Inject
+    NamedItemService namedItemService;
+
     NamedItemRessource(Class<T> typeParameterClass) {
         this.typeParameterClass = typeParameterClass;
     }
 
     @GET
     public Uni<List<T>> getAll(@RestQuery Boolean deleted) {
-        return NamedItem.getAll(typeParameterClass, deleted);
+        return namedItemService.getAll(typeParameterClass, deleted);
     }
 
     @GET
     @Path("{id}")
     public Uni<Response> getById(String id) {
-        return NamedItem.getById(typeParameterClass, id).onItem().transform(item -> {
+        return namedItemService.getById(typeParameterClass, id).onItem().transform(item -> {
             if (item != null) {
                 return Response.ok(item).build();
             } else {
@@ -65,7 +70,7 @@ public class NamedItemRessource<T extends NamedItem> {
                     .build());
         }
 
-        return NamedItem.postCreate(value).onItem().transform(res -> {
+        return namedItemService.postCreate(value).onItem().transform(res -> {
             if (res) {
                 return Response.ok(value).build();
             } else {
@@ -98,7 +103,7 @@ public class NamedItemRessource<T extends NamedItem> {
                     .build());
         }
 
-        return NamedItem.putUpdate(typeParameterClass, id, value).onItem().transform(res -> {
+        return namedItemService.putUpdate(typeParameterClass, id, value).onItem().transform(res -> {
             return Response.ok(res).build();
         });
     }
@@ -106,7 +111,7 @@ public class NamedItemRessource<T extends NamedItem> {
     @DELETE
     @Path("{id}")
     public Uni<Response> delete(String id) {
-        return NamedItem.delete(typeParameterClass, id)
+        return namedItemService.delete(typeParameterClass, id)
                 .onItem().transform(res -> {
                     if (res) {
                         return Response.ok().build();

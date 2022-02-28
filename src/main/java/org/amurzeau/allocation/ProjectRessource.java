@@ -4,6 +4,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceException;
 import javax.ws.rs.DELETE;
@@ -18,9 +19,9 @@ import org.amurzeau.allocation.rest.ApplicationType;
 import org.amurzeau.allocation.rest.Eotp;
 import org.amurzeau.allocation.rest.ErrorReply;
 import org.amurzeau.allocation.rest.ErrorType;
-import org.amurzeau.allocation.rest.NamedItem;
 import org.amurzeau.allocation.rest.ProjectReply;
 import org.amurzeau.allocation.rest.ProjectUpdate;
+import org.amurzeau.allocation.services.NamedItemService;
 import org.jboss.logging.Logger;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
@@ -30,6 +31,9 @@ import io.smallrye.mutiny.Uni;
 @Path("/projects")
 public class ProjectRessource {
     private static final Logger LOG = Logger.getLogger(ProjectRessource.class);
+
+    @Inject
+    NamedItemService namedItemService;
 
     @GET
     public Uni<List<ProjectReply>> getAll() {
@@ -61,7 +65,7 @@ public class ProjectRessource {
         if (eotps != null) {
             uni = Multi.createFrom().iterable(eotps)
                     .onItem().transformToUniAndConcatenate(eotpId -> {
-                        return NamedItem.getById(Eotp.class, eotpId).invoke(eotp -> {
+                        return namedItemService.getById(Eotp.class, eotpId).invoke(eotp -> {
                             if (eotp != null)
                                 eotpList.add(eotp);
                         }).replaceWith(true);
@@ -90,7 +94,7 @@ public class ProjectRessource {
         else
             project.eotpClosed = new LinkedHashSet<>();
 
-        Uni<?> projectTypeUni = NamedItem.getById(ApplicationType.class, value.type).invoke(v -> {
+        Uni<?> projectTypeUni = namedItemService.getById(ApplicationType.class, value.type).invoke(v -> {
             project.type = v;
         });
 
