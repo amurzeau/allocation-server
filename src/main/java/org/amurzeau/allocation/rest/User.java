@@ -7,15 +7,11 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Entity
 @Table(name = "\"user\"")
+@RegisterForReflection
 public class User extends PanacheEntityBase {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

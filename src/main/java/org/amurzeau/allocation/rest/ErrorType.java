@@ -1,5 +1,8 @@
 package org.amurzeau.allocation.rest;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection
 public enum ErrorType {
     EXISTS("item already exists"),
     NOT_EXISTS("item doesn't exists"),

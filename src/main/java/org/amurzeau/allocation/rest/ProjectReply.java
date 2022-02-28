@@ -12,10 +12,12 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.experimental.FieldNameConstants;
 
 @FieldNameConstants
 @Entity
+@RegisterForReflection
 public class ProjectReply extends PanacheEntity {
     public String name;
 

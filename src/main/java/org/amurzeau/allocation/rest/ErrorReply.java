@@ -1,5 +1,8 @@
 package org.amurzeau.allocation.rest;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection
 public class ErrorReply {
     public ErrorType error;
     public String description;
