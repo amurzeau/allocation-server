@@ -19,13 +19,35 @@ jobs:
       with:
         fetch-depth: 0
         submodules: recursive
-        
-    - name: Set up Docker Buildx
-      id: buildx
-      uses: docker/setup-buildx-action@v1
+
+    - name: Cache local Maven repository
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Cache local NPM cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - uses: graalvm/setup-graalvm@v1
+      with:
+        version: 'mandrel-latest'
+        java-version: '11'
+        components: 'native-image'
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Adjust project version in pom.xml
-      run: mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$(git describe --tags --always)
+      run: ./mvnw versions:set -DgenerateBackupPoms=false -DnewVersion=$(git describe --tags --always)
+
+    - name: Build native application
+      run: ./mvnw -B package --file pom.xml -Pnative -Dquarkus.native.native-image-xmx=4g
 
     - name: Log in to Github Packages
       if: github.event_name != 'pull_request'
@@ -45,29 +67,20 @@ jobs:
       uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
       with:
         context: .
-        file: "./src/main/docker/Dockerfile.native-build"
+        file: "./src/main/docker/Dockerfile.native-micro"
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}-native
-        
-    - uses: shrink/actions-docker-extract@v1
-      id: reports
-      with:
-        image: "${{ env.REGISTRY }}/amurzeau/allocations-server:${{ steps.meta.outputs.labels }}-native"
-        path: '/work/.'
-
-    - name: Package quarkus-app to tar.gz
-      run: tar -czf allocations-server-native.tar.gz -C ${{ steps.reports.outputs.destination }} .
 
     - uses: actions/upload-artifact@v2
       with:
         name: allocation-server
-        path: "allocations-server-native.tar.gz"
+        path: "target/*-runner"
 
     - name: Publish
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-          files: 'allocations-server-native.tar.gz'
+          files: 'target/*-runner'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
