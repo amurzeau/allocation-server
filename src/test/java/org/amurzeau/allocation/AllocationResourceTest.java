@@ -5,7 +5,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import lombok.AllArgsConstructor;
 
-import org.amurzeau.allocation.ProjectRessourceTest.ProjectJsonObject;
+import org.amurzeau.allocation.ProjectResourceTest.ProjectJsonObject;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

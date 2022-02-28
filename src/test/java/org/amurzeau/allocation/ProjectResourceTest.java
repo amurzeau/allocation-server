@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @QuarkusTest
-public class ProjectRessourceTest {
+public class ProjectResourceTest {
     private Map<String, String> createdRessources = new HashMap<>();
 
     @AllArgsConstructor

@@ -46,7 +46,7 @@ jobs:
       run: ./mvnw versions:set -DgenerateBackupPoms=false -DnewVersion=$(git describe --tags --always)
 
     - name: Build native application
-      run: ./mvnw -B package --file pom.xml -Pnative -Dquarkus.native.native-image-xmx=4g
+      run: ./mvnw -B verify --file pom.xml -Pnative -Dquarkus.native.native-image-xmx=4g
 
     - name: Log in to Github Packages
       if: github.event_name != 'pull_request'
