@@ -138,6 +138,16 @@
                         <phase>prepare-package</phase>
                     </execution>
                     <execution>
+                        <id>license-check</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run-script license-check</arguments>
+                        </configuration>
+                        <phase>prepare-package</phase>
+                    </execution>
+                    <execution>
                         <id>prod</id>
                         <goals>
                             <goal>npm</goal>
