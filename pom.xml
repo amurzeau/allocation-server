@@ -128,7 +128,7 @@
                         <phase>prepare-package</phase>
                     </execution>
                     <execution>
-                        <id>install</id>
+                        <id>npm install</id>
                         <goals>
                             <goal>npm</goal>
                         </goals>
@@ -138,7 +138,7 @@
                         <phase>prepare-package</phase>
                     </execution>
                     <execution>
-                        <id>license-check</id>
+                        <id>npm license-check</id>
                         <goals>
                             <goal>npm</goal>
                         </goals>
@@ -148,7 +148,7 @@
                         <phase>prepare-package</phase>
                     </execution>
                     <execution>
-                        <id>prod</id>
+                        <id>ng build prod</id>
                         <goals>
                             <goal>npm</goal>
                         </goals>
@@ -165,8 +165,8 @@
                 <version>${maven-resources-plugin.version}</version>
                 <executions>
                     <execution>
-                        <id>copy-resources</id>
-                        <phase>process-resources</phase>
+                        <id>copy-webapp</id>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
