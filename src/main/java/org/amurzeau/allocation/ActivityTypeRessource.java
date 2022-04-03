@@ -6,7 +6,7 @@ import org.amurzeau.allocation.rest.ActivityType;
 
 @Path("/activity-types")
 public class ActivityTypeRessource extends NamedItemRessource<ActivityType> {
-    ActivityTypeRessource() {
+    public ActivityTypeRessource() {
         super(ActivityType.class);
     }
 }

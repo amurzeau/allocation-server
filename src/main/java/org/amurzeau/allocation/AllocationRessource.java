@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.persistence.LockModeType;
+import javax.transaction.Transactional;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -20,9 +21,7 @@ import org.amurzeau.allocation.rest.ErrorType;
 import org.amurzeau.allocation.rest.ProjectReply;
 import org.amurzeau.allocation.services.NamedItemService;
 import org.jboss.logging.Logger;
-
-import io.quarkus.hibernate.reactive.panache.Panache;
-import io.smallrye.mutiny.Uni;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 @Path("/allocations")
 public class AllocationRessource {
@@ -35,111 +34,90 @@ public class AllocationRessource {
     NamedItemService namedItemService;
 
     @GET
-    public Uni<List<AllocationReply>> getAll() {
-        return AllocationReply.<AllocationReply>findAll().list().invoke((List<AllocationReply> l) -> {
-            for (AllocationReply projectReply : l) {
-                LOG.infov("Item: {0}: {1}", projectReply.id,
-                        projectReply.project != null ? projectReply.project.name : "");
-            }
-        });
+    public List<AllocationReply> getAll() {
+        List<AllocationReply> results = AllocationReply.<AllocationReply>findAll().list();
+
+        for (AllocationReply projectReply : results) {
+            LOG.infov("Item: {0}: {1}", projectReply.id,
+                    projectReply.project != null ? projectReply.project.name : "");
+        }
+
+        return results;
     }
 
     @GET
     @Path("{id}")
-    public Uni<Response> getById(Long id) {
-        return AllocationReply.findById(id).onItem().transform(allocation -> {
-            if (allocation != null) {
-                return Response.ok(allocation).build();
-            } else {
-                return Response
-                        .status(Status.NOT_FOUND)
-                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No allocation with id %s", id))
-                        .build();
-            }
-        });
+    public Response getById(@PathParam Long id) {
+        AllocationReply result = AllocationReply.findById(id);
+
+        if (result == null) {
+            return Response
+                    .status(Status.NOT_FOUND)
+                    .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No allocation with id %s", id))
+                    .build();
+        }
+
+        return Response.ok(result).build();
     }
 
-    private Uni<AllocationReply> createOrUpdateProject(AllocationReply replyItem, AllocationUpdate value) {
+    private AllocationReply createOrUpdateProject(AllocationReply replyItem, AllocationUpdate value) {
         replyItem.duration = value.duration;
 
-        Uni<?> projectUni = ProjectReply.<ProjectReply>findById(value.projectId).invoke(v -> {
-            replyItem.project = v;
-        });
+        if (value.projectId != null)
+            replyItem.project = ProjectReply.<ProjectReply>findById(value.projectId);
 
-        Uni<?> activityTypeUni = namedItemService.getById(ActivityType.class, value.activityTypeId).invoke(v -> {
-            replyItem.activityType = v;
-        });
+        if (value.activityTypeId != null)
+            replyItem.activityType = namedItemService.getById(ActivityType.class, value.activityTypeId);
 
-        return Uni.combine().all().unis(projectUni, activityTypeUni)
-                .discardItems()
-                .replaceWith(replyItem)
-                .onItem().<AllocationReply>transformToUni(item -> {
-                    return item.<AllocationReply>persist()
-                            .invoke((persistedItem) -> {
-                                LOG.infov("Creating new item {0} with project name {1}",
-                                        persistedItem.id,
-                                        persistedItem.project != null ? persistedItem.project.name : "");
-                            });
-                });
+        replyItem.persist();
+
+        LOG.infov("Creating new item {0} with project name {1}",
+                replyItem.id,
+                replyItem.project != null ? replyItem.project.name : "");
+
+        return replyItem;
     }
 
     @POST
-    public Uni<Response> postNew(AllocationUpdate value) {
-        return Panache.withTransaction(() -> {
-            AllocationReply project = new AllocationReply();
-            return createOrUpdateProject(project, value);
-        }).map((item) -> {
-            return Response.ok(item).build();
-        });
+    @Transactional
+    public Response postNew(AllocationUpdate value) {
+        AllocationReply project = new AllocationReply();
+        project = createOrUpdateProject(project, value);
+
+        return Response.ok(project).build();
     }
 
     @PUT
     @Path("{id}")
-    public Uni<Response> putUpdate(Long id, AllocationUpdate value) {
-        return Panache.withTransaction(() -> {
-            Uni<AllocationReply> var = AllocationReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
-            return var
-                    .onItem().<AllocationReply>transformToUni(item -> {
-                        if (item == null) {
-                            LOG.infov("No allocation with id {0}", id);
-                            return Uni.createFrom().nullItem();
-                        }
-                        return createOrUpdateProject(item, value);
-                    });
-        }).onItem().transform(res -> {
-            if (res != null) {
-                return Response.ok(res).build();
-            } else {
-                return Response
-                        .status(Status.NOT_FOUND)
-                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No allocation with id %s", id))
-                        .build();
-            }
-        });
+    @Transactional
+    public Response putUpdate(@PathParam Long id, AllocationUpdate value) {
+        AllocationReply var = AllocationReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
+
+        if (var == null) {
+            LOG.infov("No allocation with id {0}", id);
+            return Response
+                    .status(Status.NOT_FOUND)
+                    .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No allocation with id %s", id))
+                    .build();
+        }
+
+        var = createOrUpdateProject(var, value);
+        return Response.ok(var).build();
     }
 
     @DELETE
     @Path("{id}")
-    public Uni<Response> delete(Long id) {
-        return Panache.withTransaction(() -> {
-            Uni<AllocationReply> var = AllocationReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
-            return var
-                    .onItem().<Boolean>transformToUni(item -> {
-                        if (item != null)
-                            return item.delete().replaceWith(true);
-                        else
-                            return Uni.createFrom().item(false);
-                    });
-        }).onItem().transform(res -> {
-            if (res) {
-                return Response.ok(res).build();
-            } else {
-                return Response
-                        .status(Status.NOT_FOUND)
-                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No allocation with id %s",
-                                id))
-                        .build();
-            }
-        });
+    @Transactional
+    public Response delete(@PathParam Long id) {
+        boolean result = AllocationReply.deleteById(id);
+        if (!result) {
+            return Response
+                    .status(Status.NOT_FOUND)
+                    .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No allocation with id %s",
+                            id))
+                    .build();
+        }
+
+        return Response.ok().build();
     }
 }

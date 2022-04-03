@@ -4,7 +4,7 @@ import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.validation.constraints.NotBlank;
 
-import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;

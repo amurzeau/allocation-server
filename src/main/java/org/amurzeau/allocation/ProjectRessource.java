@@ -7,6 +7,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceException;
+import javax.transaction.Transactional;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -23,10 +24,7 @@ import org.amurzeau.allocation.rest.ProjectReply;
 import org.amurzeau.allocation.rest.ProjectUpdate;
 import org.amurzeau.allocation.services.NamedItemService;
 import org.jboss.logging.Logger;
-
-import io.quarkus.hibernate.reactive.panache.Panache;
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 @Path("/projects")
 public class ProjectRessource {
@@ -36,49 +34,42 @@ public class ProjectRessource {
     NamedItemService namedItemService;
 
     @GET
-    public Uni<List<ProjectReply>> getAll() {
-        return ProjectReply.<ProjectReply>findAll().list().invoke((List<ProjectReply> l) -> {
-            for (ProjectReply projectReply : l) {
-                LOG.infov("Item: {0}: {1}", projectReply.id, projectReply.name);
-            }
-        });
+    public List<ProjectReply> getAll() {
+        List<ProjectReply> results = ProjectReply.<ProjectReply>findAll().list();
+
+        for (ProjectReply projectReply : results) {
+            LOG.infov("Item: {0}: {1}", projectReply.id, projectReply.name);
+        }
+
+        return results;
     }
 
     @GET
     @Path("{id}")
-    public Uni<Response> getById(Long id) {
-        return ProjectReply.findById(id).onItem().transform(project -> {
-            if (project != null) {
-                return Response.ok(project).build();
-            } else {
-                return Response
-                        .status(Status.NOT_FOUND)
-                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
-                        .build();
-            }
-        });
-    }
+    public Response getById(@PathParam Long id) {
+        ProjectReply result = ProjectReply.findById(id);
 
-    private Uni<Void> fetchEotps(List<String> eotps, Set<Eotp> eotpList) {
-        Uni<Void> uni;
-
-        if (eotps != null) {
-            uni = Multi.createFrom().iterable(eotps)
-                    .onItem().transformToUniAndConcatenate(eotpId -> {
-                        return namedItemService.getById(Eotp.class, eotpId).invoke(eotp -> {
-                            if (eotp != null)
-                                eotpList.add(eotp);
-                        }).replaceWith(true);
-                    })
-                    .onItem().ignoreAsUni();
-        } else {
-            uni = Uni.createFrom().nullItem();
+        if (result == null) {
+            return Response
+                    .status(Status.NOT_FOUND)
+                    .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
+                    .build();
         }
 
-        return uni;
+        return Response.ok(result).build();
     }
 
-    private Uni<ProjectReply> createOrUpdateProject(ProjectReply project, ProjectUpdate value) {
+    private void fetchEotps(List<String> eotps, Set<Eotp> eotpList) {
+        if (eotps != null) {
+            for (String eotpId : eotps) {
+                Eotp eotp = namedItemService.getById(Eotp.class, eotpId);
+                if (eotp != null)
+                    eotpList.add(eotp);
+            }
+        }
+    }
+
+    private ProjectReply createOrUpdateProject(ProjectReply project, ProjectUpdate value) {
         project.name = value.name;
         project.board = value.board;
         project.component = value.component;
@@ -94,87 +85,70 @@ public class ProjectRessource {
         else
             project.eotpClosed = new LinkedHashSet<>();
 
-        Uni<?> projectTypeUni = namedItemService.getById(ApplicationType.class, value.type).invoke(v -> {
-            project.type = v;
-        });
+        if (value.type != null)
+            project.type = namedItemService.getById(ApplicationType.class, value.type);
 
-        Uni<Void> eotpOpenUni = fetchEotps(value.eotpOpen, project.eotpOpen);
-        Uni<Void> eotpClosedUni = fetchEotps(value.eotpClosed, project.eotpClosed);
+        fetchEotps(value.eotpOpen, project.eotpOpen);
+        fetchEotps(value.eotpClosed, project.eotpClosed);
 
-        return Uni.combine().all().unis(projectTypeUni, eotpOpenUni, eotpClosedUni)
-                .discardItems()
-                .replaceWith(project)
-                .onItem().<ProjectReply>transformToUni(item -> {
-                    return item.<ProjectReply>persist()
-                            .invoke((persistedItem) -> {
-                                LOG.infov("Creating new item {0} with name {1}", persistedItem.id,
-                                        persistedItem.name);
-                            });
-                });
+        project.persist();
+        LOG.infov("Creating new item {0} with name {1}",
+                project.id,
+                project.name);
+
+        return project;
     }
 
     @POST
-    public Uni<Response> postNew(ProjectUpdate value) {
-        return Panache.withTransaction(() -> {
-            ProjectReply project = new ProjectReply();
-            return createOrUpdateProject(project, value);
-        }).map((item) -> {
-            return Response.ok(item).build();
-        });
+    @Transactional
+    public Response postNew(ProjectUpdate value) {
+        ProjectReply project = new ProjectReply();
+        project = createOrUpdateProject(project, value);
+
+        return Response.ok(project).build();
     }
 
     @PUT
     @Path("{id}")
-    public Uni<Response> putUpdate(Long id, ProjectUpdate value) {
-        return Panache.withTransaction(() -> {
-            Uni<ProjectReply> var = ProjectReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
-            return var
-                    .onItem().<ProjectReply>transformToUni(item -> {
-                        if (item == null) {
-                            LOG.infov("No project with id {0}", id);
-                            return Uni.createFrom().nullItem();
-                        }
-                        return createOrUpdateProject(item, value);
-                    });
-        }).onItem().transform(res -> {
-            if (res != null) {
-                return Response.ok(res).build();
-            } else {
-                return Response
-                        .status(Status.NOT_FOUND)
-                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
-                        .build();
-            }
-        });
+    @Transactional
+    public Response putUpdate(@PathParam Long id, ProjectUpdate value) {
+        ProjectReply var = ProjectReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
+        if (var == null) {
+            LOG.infov("No project with id {0}", id);
+            return Response
+                    .status(Status.NOT_FOUND)
+                    .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
+                    .build();
+        }
+        var = createOrUpdateProject(var, value);
+
+        return Response.ok(var).build();
     }
 
     @DELETE
     @Path("{id}")
-    public Uni<Response> delete(Long id) {
-        return Panache.withTransaction(() -> {
-            Uni<ProjectReply> var = ProjectReply.findById(id, LockModeType.PESSIMISTIC_WRITE);
-            return var
-                    .onItem().<Boolean>transformToUni(item -> {
-                        if (item != null)
-                            return item.delete().replaceWith(true);
-                        else
-                            return Uni.createFrom().item(false);
-                    });
-        }).onItem().transform(res -> {
-            if (res) {
-                return Response.ok(res).build();
-            } else {
-                return Response
-                        .status(Status.NOT_FOUND)
-                        .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
-                        .build();
-            }
-        }).onFailure(PersistenceException.class).recoverWithItem(res -> {
+    @Transactional
+    public Response delete(@PathParam Long id) {
+        boolean result;
+
+        try {
+            result = ProjectReply.deleteById(id);
+            ProjectReply.flush(); // Exception is probably thrown here
+        } catch (PersistenceException ex) {
             return Response.status(Status.NOT_ACCEPTABLE)
                     .entity(ErrorReply.create(ErrorType.CANT_DELETE_REFERENCED,
                             "Project id %s is referenced and can't be deleted",
                             id))
                     .build();
-        });
+        }
+
+        if (!result) {
+            return Response
+                    .status(Status.NOT_FOUND)
+                    .entity(ErrorReply.create(ErrorType.NOT_EXISTS, "No project with id %s", id))
+                    .build();
+        }
+
+        return Response.ok().build();
     }
 }

@@ -4,7 +4,7 @@ import java.sql.Date;
 
 import javax.persistence.Entity;
 
-import io.quarkus.hibernate.reactive.panache.PanacheEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @Entity

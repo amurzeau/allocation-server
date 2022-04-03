@@ -6,7 +6,7 @@ import org.amurzeau.allocation.rest.ApplicationType;
 
 @Path("/application-types")
 public class ApplicationTypeResource extends NamedItemRessource<ApplicationType> {
-    ApplicationTypeResource() {
+    public ApplicationTypeResource() {
         super(ApplicationType.class);
     }
 }
