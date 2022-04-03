@@ -1,0 +1,4 @@
+- Add field for eOTPs
+- Add loading before retrieving all items to show in table
+- Project labels in allocation contains "undefined" or "null"
+- In Allocation, project search field search nothing (use same as in project view)
